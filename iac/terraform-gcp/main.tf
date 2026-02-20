@@ -102,7 +102,8 @@ resource "google_cloud_run_v2_service" "api" {
 # Permitir invocación pública
 resource "google_cloud_run_v2_service_iam_member" "public_invoker" {
   name     = google_cloud_run_v2_service.api.name
-  location = google_cloud_run_v2_service.api.location
+  location = var.region
   role     = "roles/run.invoker"
   member   = "allUsers"
 }
+
