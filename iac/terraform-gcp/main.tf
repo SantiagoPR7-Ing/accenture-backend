@@ -18,7 +18,8 @@ resource "google_project_service" "services" {
   for_each = toset([
     "run.googleapis.com",
     "sqladmin.googleapis.com",
-    "artifactregistry.googleapis.com"
+    "artifactregistry.googleapis.com",
+    "iamcredentials.googleapis.com"
   ])
   service            = each.value
   disable_on_destroy = false
