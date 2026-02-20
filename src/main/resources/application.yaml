@@ -1,0 +1,16 @@
+spring:
+  application:
+    name: accenture-backend
+
+  r2dbc:
+    url: r2dbc:postgresql://localhost:5432/accenture
+    username: postgres
+    password: Santi716*
+
+logging:
+  level:
+    org.springframework.r2dbc: INFO
+    io.r2dbc.postgresql: INFO
+
+server:
+  port: 8080
