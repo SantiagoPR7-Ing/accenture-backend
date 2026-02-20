@@ -9,6 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      id-token: write   # IMPORTANTÍSIMO para WIF
 
     env:
       PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
@@ -16,18 +17,31 @@ jobs:
       IMAGE: ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/accenture-repo/accenture-api:latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Auth to GCP
+      - name: Auth to GCP (WIF)
         uses: google-github-actions/auth@v2
         with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_SA_EMAIL }}
 
       - name: Setup gcloud
         uses: google-github-actions/setup-gcloud@v2
 
-      - name: Configure Docker auth (Artifact Registry)
+      - name: Terraform Init
+        working-directory: iac/terraform-gcp
+        run: terraform init
+
+      - name: Terraform Apply (create infra baseline)
+        working-directory: iac/terraform-gcp
+        run: |
+          terraform apply -auto-approve \
+            -var="project_id=$PROJECT_ID" \
+            -var="region=$REGION" \
+            -var="db_password=${{ secrets.DB_PASSWORD }}" \
+            -var="image=$IMAGE"
+
+      - name: Configure Docker auth
         run: |
           gcloud auth configure-docker $REGION-docker.pkg.dev --quiet
 
@@ -36,11 +50,7 @@ jobs:
           docker build -t "$IMAGE" .
           docker push "$IMAGE"
 
-      - name: Terraform Init
-        working-directory: iac/terraform-gcp
-        run: terraform init
-
-      - name: Terraform Apply
+      - name: Terraform Apply (deploy latest image)
         working-directory: iac/terraform-gcp
         run: |
           terraform apply -auto-approve \
